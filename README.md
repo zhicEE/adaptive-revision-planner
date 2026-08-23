@@ -171,7 +171,7 @@ The first version is not intended to be:
 - [x] Define the problem and project positioning
 - [x] Define initial users, stories, non-goals, and scope priorities
 - [x] Define the deterministic core's initial input/output contract
-- [ ] Write the algorithm test matrix
+- [x] Write and review the algorithm test matrix
 - [ ] Implement the pure Python scheduling engine
 - [ ] Add FastAPI, Pydantic models, and the service layer
 - [ ] Add PostgreSQL persistence and migrations
