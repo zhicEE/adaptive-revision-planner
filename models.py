@@ -1,0 +1,27 @@
+from dataclasses import dataclass
+from datetime import datetime
+
+
+@dataclass
+class Task:
+    task_id: str
+    estimated_minutes: int
+    completed_minutes: int
+    deadline: datetime
+    importance: int
+
+    def __post_init__(self):
+        if self.estimated_minutes <= 0:
+            raise ValueError("Estimated minutes must be positive")
+
+        if self.completed_minutes > self.estimated_minutes:
+            raise ValueError("Completed minutes cannot exceed estimated minutes")
+
+        if self.completed_minutes < 0:
+            raise ValueError("Completed minutes cannot be negative")
+        if self.importance < 1 or self.importance > 5:
+            raise ValueError("Importance must be between 1 and 5")
+
+    @property
+    def remaining_minutes(self):
+        return self.estimated_minutes - self.completed_minutes

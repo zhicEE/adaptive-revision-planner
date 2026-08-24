@@ -16,3 +16,7 @@ def calculate_unscheduled(remaining_minutes, available_minutes):
         raise ValueError("Available minutes must not be negative")
 
     return max(remaining_minutes - available_minutes, 0)
+
+
+def sort_tasks_by_priority(tasks):
+    return sorted(tasks, key=lambda task: -task.importance)
