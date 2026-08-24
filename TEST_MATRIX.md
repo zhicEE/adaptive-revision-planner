@@ -7,9 +7,12 @@ scenarios the user has reasoned through from candidates that still need user
 review. The matrix is not evidence that the scheduling engine has been
 implemented or independently mastered.
 
-The current code only implements two small calculation helpers with nine
-passing `unittest` checks. None of the scheduling scenarios below is automated
-yet.
+The current code implements a validated `Task` model, two small calculation
+helpers, and deterministic priority ordering with 20 passing `unittest` tests.
+S03, S04, and S07 are automated. The completed-work boundary used by S13 is
+also covered at the model layer, but the remaining scheduling scenarios are not
+implemented yet. The implementation was AI-guided and is not evidence of
+independent mastery.
 
 ## Priority rule v0.1 - reviewed 2026-08-23
 
@@ -31,11 +34,11 @@ not change the priority order in this first candidate rule.
 |---|---|---|---|---|---|
 | S01 | One task fits exactly | T1 has 60 minutes remaining, deadline 12:00, availability 10:00-11:00, minimum 30, maximum 60 | Schedule T1 from 10:00-11:00; zero minutes unscheduled | Block stays inside availability and before deadline; allocation does not exceed remaining work | User confirmed |
 | S02 | Capacity is insufficient after partial completion | T1 estimate 120, completed 30, deadline 12:00, availability 10:00-11:00 | Schedule 60 minutes; report 30 minutes unscheduled with `INSUFFICIENT_CAPACITY` | Remaining work is 90 minutes; the system reports rather than hides the shortfall | User confirmed |
-| S03 | Equal deadline, different importance | T1 and T2 each need 60 minutes and have deadline 15:00; importance is 5 for T1 and 3 for T2; only 10:00-11:00 is available | Schedule T1; report all 60 minutes of T2 as unscheduled | Higher importance breaks an equal-deadline tie | User confirmed |
-| S04 | Full priority tie | T1 and T2 have equal deadline, importance, and remaining work; only one 60-minute window exists | Schedule T1 first because `T1` sorts before `T2` | Stable `task_id` tie-breaker makes repeated output deterministic | User confirmed |
+| S03 | Equal deadline, different importance | T1 and T2 each need 60 minutes and have deadline 15:00; importance is 5 for T1 and 3 for T2; only 10:00-11:00 is available | Schedule T1; report all 60 minutes of T2 as unscheduled | Higher importance breaks an equal-deadline tie | User confirmed; priority ordering automated 2026-08-24 |
+| S04 | Full priority tie | T1 and T2 have equal deadline, importance, and remaining work; only one 60-minute window exists | Schedule T1 first because `T1` sorts before `T2` | Stable `task_id` tie-breaker makes repeated output deterministic | User confirmed; priority ordering automated 2026-08-24 |
 | S05 | Window is shorter than the minimum session | T1 needs 60 minutes, minimum session is 30, availability is 10:00-10:20 | Create no block; report all 60 minutes with `SESSION_TOO_SHORT` | The scheduler does not create an ineffective undersized block | User confirmed |
 | S06 | No window exists before the deadline | T1 needs 60 minutes, deadline 11:00, only availability is 11:30-12:30 | Create no block; report all 60 minutes with `NO_WINDOW_BEFORE_DEADLINE` | Work is never silently placed after its deadline | User confirmed |
-| S07 | Earlier deadline versus higher importance | T1 needs 60 minutes, deadline 11:00, importance 2; T2 needs 60 minutes, deadline 15:00, importance 5; only 10:00-11:00 is available | Schedule T1; report T2 as unscheduled | Earlier deadline takes priority over higher importance | User confirmed |
+| S07 | Earlier deadline versus higher importance | T1 needs 60 minutes, deadline 11:00, importance 2; T2 needs 60 minutes, deadline 15:00, importance 5; only 10:00-11:00 is available | Schedule T1; report T2 as unscheduled | Earlier deadline takes priority over higher importance | User confirmed; priority ordering automated 2026-08-24 |
 | S08 | Task is already complete | T1 estimate and completed minutes are both 60 | Create no block and report zero remaining and zero unscheduled minutes for T1 | Completed work is excluded rather than scheduled again | Confirmed in guided code |
 | S09 | One task is split across two windows | T1 needs 90 minutes, minimum session 30, maximum 60; availability is 10:00-10:45 and 14:00-14:45 before the deadline | Create two 45-minute blocks; zero minutes unscheduled | Splitting is allowed and both blocks respect session limits | User confirmed |
 | S10 | Maximum session length is respected | T1 needs 120 minutes, minimum session 30, maximum 45; availability is 10:00-12:30 | Create blocks of 45, 45, and 30 minutes; leave 30 minutes of availability unused | Every block stays between the minimum and maximum session length | User modified and confirmed |
@@ -54,3 +57,7 @@ replanning decisions used in the matrix.
 During implementation, convert each accepted row into one or more automated
 tests. Gate A still requires those tests to pass against the deterministic core
 and the user to explain the implemented data flow without reading the code.
+
+As of 2026-08-24, S03, S04, and S07 have automated priority-ordering tests. The
+tests do not yet allocate the single available window or produce unscheduled
+work, so only the priority-ordering part of each scenario is implemented.

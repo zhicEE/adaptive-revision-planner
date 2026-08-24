@@ -65,6 +65,52 @@ class SchedulerTests(unittest.TestCase):
 
         self.assertEqual(actual_ids, ["T1", "T2"])
 
+    def test_uses_task_id_as_tie_breaker_when_deadline_and_importance_are_equal(self):
+        deadline = datetime(2026, 8, 25, 15, 0)
+
+        t1 = Task(
+            "T1",
+            60,
+            0,
+            deadline=deadline,
+            importance=3,
+        )
+
+        t2 = Task(
+            "T2",
+            60,
+            0,
+            deadline=deadline,
+            importance=3,
+        )
+
+        ordered_tasks = sort_tasks_by_priority([t2, t1])
+        actual_ids = [task.task_id for task in ordered_tasks]
+
+        self.assertEqual(actual_ids, ["T1", "T2"])
+
+    def test_sorts_earlier_deadline_before_higher_importance(self):
+
+        t1 = Task(
+            "T1",
+            60,
+            0,
+            deadline=datetime(2026, 8, 25, 11, 0),
+            importance=2,
+        )
+
+        t2 = Task(
+            "T2",
+            60,
+            0,
+            deadline=datetime(2026, 8, 25, 15, 0),
+            importance=5,
+        )
+
+        ordered_tasks = sort_tasks_by_priority([t2, t1])
+        actual_ids = [task.task_id for task in ordered_tasks]
+
+        self.assertEqual(actual_ids, ["T1", "T2"])
 
 if __name__ == "__main__":
     unittest.main()

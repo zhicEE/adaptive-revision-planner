@@ -4,7 +4,7 @@
 
 ## Project Status
 
-**Early design phase.** The problem definition, product scope, core inputs and outputs, and initial engineering plan have been defined. Application code has not been implemented yet.
+**Gate A — deterministic core implementation.** The repository now contains a validated `Task` model, two initial calculation helpers, and deterministic priority ordering by deadline, importance, and `task_id`. The current suite has 20 passing `unittest` tests, including automated coverage of matrix scenarios S03, S04, and S07. Availability windows, block allocation, the API, persistence, and a runnable application have not been implemented yet.
 
 ## Why This Project Exists
 
@@ -38,7 +38,7 @@ Adaptive Revision Planner is intended to answer those questions with reproducibl
 
 ## Deterministic Scheduling Core
 
-The scheduling engine will first be implemented as pure Python functions, independently of the API and database.
+The scheduling engine is being implemented first as pure Python functions, independently of the API and database.
 
 ### Inputs
 
@@ -71,7 +71,7 @@ The scheduling engine will first be implemented as pure Python functions, indepe
 - Session-length constraints
 - Insufficient total capacity
 
-The initial algorithm test suite will include at least 12–15 scenarios, such as equal deadlines, sufficient and insufficient capacity, unavailable days, importance-versus-urgency trade-offs, partial completion, disrupted plans, invalid effort values, and conflicting exams.
+The reviewed algorithm matrix contains 15 scenarios covering equal deadlines, sufficient and insufficient capacity, unavailable days, importance-versus-urgency trade-offs, partial completion, disrupted plans, invalid effort values, and conflicting exams. S03, S04, and S07 are automated; the remaining scenarios still require implementation and verification.
 
 ## AI Responsibility Boundary
 
@@ -172,6 +172,7 @@ The first version is not intended to be:
 - [x] Define initial users, stories, non-goals, and scope priorities
 - [x] Define the deterministic core's initial input/output contract
 - [x] Write and review the algorithm test matrix
+- [x] Implement `Task` validation and stable priority ordering for S03, S04, and S07
 - [ ] Implement the pure Python scheduling engine
 - [ ] Add FastAPI, Pydantic models, and the service layer
 - [ ] Add PostgreSQL persistence and migrations
@@ -182,7 +183,13 @@ The first version is not intended to be:
 
 ## Running the Project
 
-Setup instructions will be added when the first executable version is implemented. At the current design stage, there is no runnable application yet.
+There is no application server or user interface yet. The current deterministic-core tests can be run from the repository root with:
+
+```bash
+python -m unittest
+```
+
+This command currently runs 20 tests. Passing tests demonstrate the checked behavior of the current implementation; they do not by themselves prove that the full scheduling engine or runnable application exists.
 
 ## Portfolio Evidence This Project Should Produce
 
