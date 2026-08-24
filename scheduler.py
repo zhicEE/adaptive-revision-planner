@@ -19,4 +19,4 @@ def calculate_unscheduled(remaining_minutes, available_minutes):
 
 
 def sort_tasks_by_priority(tasks):
-    return sorted(tasks, key=lambda task: -task.importance)
+    return sorted(tasks, key=lambda task: (task.deadline, -task.importance, task.task_id))
