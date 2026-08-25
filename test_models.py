@@ -1,7 +1,7 @@
 import unittest
 from datetime import datetime
 
-from models import Task
+from models import Task, AvailabilityWindow
 
 
 class TaskTests(unittest.TestCase):
@@ -94,6 +94,34 @@ class TaskTests(unittest.TestCase):
                 deadline=datetime(2026, 8, 25, 15, 0),
                 importance=6,
             )
+
+
+class AvailabilityWindowTests(unittest.TestCase):
+    def test_rejects_start_after_end(self):
+        start = datetime(2026, 8, 25, 11, 0)
+        end = datetime(2026, 8, 25, 10, 0)
+
+        with self.assertRaises(ValueError):
+            AvailabilityWindow(start=start, end=end)
+
+    def test_stores_valid_window_data(self):
+        start = datetime(2026, 8, 25, 10, 0)
+        end = datetime(2026, 8, 25, 11, 0)
+
+        window = AvailabilityWindow(
+            start=start,
+            end=end,
+        )
+
+        self.assertEqual(window.start, start)
+        self.assertEqual(window.end, end)
+
+    def test_rejects_start_equal_to_end(self):
+        start = datetime(2026, 8, 25, 10, 0)
+        end = datetime(2026, 8, 25, 10, 0)
+
+        with self.assertRaises(ValueError):
+            AvailabilityWindow(start=start, end=end)
 
 
 if __name__ == "__main__":

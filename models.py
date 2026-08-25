@@ -25,3 +25,13 @@ class Task:
     @property
     def remaining_minutes(self):
         return self.estimated_minutes - self.completed_minutes
+
+
+@dataclass
+class AvailabilityWindow:
+    start: datetime
+    end: datetime
+
+    def __post_init__(self):
+        if self.start >= self.end:
+            raise ValueError("End time must be after start time")
