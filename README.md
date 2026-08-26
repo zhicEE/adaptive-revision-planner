@@ -4,7 +4,7 @@
 
 ## Project Status
 
-**Gate A — deterministic core implementation.** The repository now contains a validated `Task` model, two initial calculation helpers, and deterministic priority ordering by deadline, importance, and `task_id`. The current suite has 20 passing `unittest` tests, including automated coverage of matrix scenarios S03, S04, and S07. Availability windows, block allocation, the API, persistence, and a runnable application have not been implemented yet.
+**Gate A — deterministic core implementation.** The repository now contains validated `Task` and `AvailabilityWindow` inputs, stored session limits, initial result models, two calculation helpers, deterministic priority ordering by deadline, importance, and `task_id`, and the first exact-fit allocation slice. The current suite has 25 passing `unittest` tests. S01 is automated end to end for one task that exactly fills one window; S03, S04, and S07 currently automate priority ordering only. Capacity-limited allocation, multiple tasks and windows, the API, persistence, and a runnable application have not been implemented yet.
 
 ## Why This Project Exists
 
@@ -71,7 +71,7 @@ The scheduling engine is being implemented first as pure Python functions, indep
 - Session-length constraints
 - Insufficient total capacity
 
-The reviewed algorithm matrix contains 15 scenarios covering equal deadlines, sufficient and insufficient capacity, unavailable days, importance-versus-urgency trade-offs, partial completion, disrupted plans, invalid effort values, and conflicting exams. S03, S04, and S07 are automated; the remaining scenarios still require implementation and verification.
+The reviewed algorithm matrix contains 15 scenarios covering equal deadlines, sufficient and insufficient capacity, unavailable days, importance-versus-urgency trade-offs, partial completion, disrupted plans, invalid effort values, and conflicting exams. S01 is automated for exact-fit allocation. S03, S04, and S07 automate priority ordering but do not yet allocate capacity or report unscheduled work. The remaining scenario behavior still requires implementation and verification.
 
 ## AI Responsibility Boundary
 
@@ -189,7 +189,7 @@ There is no application server or user interface yet. The current deterministic-
 python -m unittest
 ```
 
-This command currently runs 20 tests. Passing tests demonstrate the checked behavior of the current implementation; they do not by themselves prove that the full scheduling engine or runnable application exists.
+This command currently runs 25 tests. Passing tests demonstrate the checked behavior of the current implementation; they do not by themselves prove that the full scheduling engine or runnable application exists.
 
 ## Portfolio Evidence This Project Should Produce
 
