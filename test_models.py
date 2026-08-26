@@ -14,6 +14,8 @@ class TaskTests(unittest.TestCase):
             completed_minutes=25,
             deadline=deadline,
             importance=5,
+            min_session_minutes=30,
+            max_session_minutes=60,
         )
 
         self.assertEqual(task.task_id, "English")
@@ -29,6 +31,8 @@ class TaskTests(unittest.TestCase):
             25,
             deadline=datetime(2026, 8, 25, 15, 0),
             importance=3,
+            min_session_minutes=30,
+            max_session_minutes=60,
         )
 
         self.assertEqual(task.remaining_minutes, 65)
@@ -41,6 +45,8 @@ class TaskTests(unittest.TestCase):
                 100,
                 deadline=datetime(2026, 8, 25, 15, 0),
                 importance=3,
+                min_session_minutes=30,
+                max_session_minutes=60,
             )
 
     def test_rejects_negative_completed_minutes(self):
@@ -51,6 +57,8 @@ class TaskTests(unittest.TestCase):
                 -5,
                 deadline=datetime(2026, 8, 25, 15, 0),
                 importance=3,
+                min_session_minutes=30,
+                max_session_minutes=60,
             )
 
     def test_rejects_zero_estimated_minutes(self):
@@ -61,6 +69,8 @@ class TaskTests(unittest.TestCase):
                 0,
                 deadline=datetime(2026, 8, 25, 15, 0),
                 importance=3,
+                min_session_minutes=30,
+                max_session_minutes=60,
             )
 
     def test_allows_zero_completed_minutes(self):
@@ -70,6 +80,8 @@ class TaskTests(unittest.TestCase):
             0,
             deadline=datetime(2026, 8, 25, 15, 0),
             importance=3,
+            min_session_minutes=30,
+            max_session_minutes=60,
         )
 
         self.assertEqual(task.completed_minutes, 0)
@@ -83,6 +95,8 @@ class TaskTests(unittest.TestCase):
                 25,
                 deadline=datetime(2026, 8, 25, 15, 0),
                 importance=0,
+                min_session_minutes=30,
+                max_session_minutes=60,
             )
 
     def test_rejects_importance_above_five(self):
@@ -93,7 +107,23 @@ class TaskTests(unittest.TestCase):
                 25,
                 deadline=datetime(2026, 8, 25, 15, 0),
                 importance=6,
+                min_session_minutes=30,
+                max_session_minutes=60,
             )
+
+    def test_stores_session_limits(self):
+        task = Task(
+            "English",
+            90,
+            25,
+            deadline=datetime(2026, 8, 25, 15, 0),
+            importance=5,
+            min_session_minutes=30,
+            max_session_minutes=60,
+        )
+
+        self.assertEqual(task.min_session_minutes, 30)
+        self.assertEqual(task.max_session_minutes, 60)
 
 
 class AvailabilityWindowTests(unittest.TestCase):

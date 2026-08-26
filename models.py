@@ -9,6 +9,8 @@ class Task:
     completed_minutes: int
     deadline: datetime
     importance: int
+    min_session_minutes: int
+    max_session_minutes: int
 
     def __post_init__(self):
         if self.estimated_minutes <= 0:
@@ -35,3 +37,17 @@ class AvailabilityWindow:
     def __post_init__(self):
         if self.start >= self.end:
             raise ValueError("End time must be after start time")
+
+
+@dataclass
+class ScheduledBlock:
+    task_id: str
+    start: datetime
+    end: datetime
+    allocated_minutes: int
+
+
+@dataclass
+class ScheduleResult:
+    scheduled_blocks: list[ScheduledBlock]
+    unscheduled_minutes: int

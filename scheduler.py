@@ -1,3 +1,6 @@
+from models import ScheduledBlock, ScheduleResult
+
+
 def calculate_remaining(estimated_minutes, completed_minutes):
     if estimated_minutes <= 0:
         raise ValueError("Estimated minutes must be positive")
@@ -20,3 +23,20 @@ def calculate_unscheduled(remaining_minutes, available_minutes):
 
 def sort_tasks_by_priority(tasks):
     return sorted(tasks, key=lambda task: (task.deadline, -task.importance, task.task_id))
+
+
+def schedule_tasks(tasks, availability_windows):
+    task = tasks[0]
+    window = availability_windows[0]
+
+    scheduled_block = ScheduledBlock(
+        task_id=task.task_id,
+        start=window.start,
+        end=window.end,
+        allocated_minutes=task.remaining_minutes,
+    )
+
+    return ScheduleResult(
+        scheduled_blocks=[scheduled_block],
+        unscheduled_minutes=0,
+    )

@@ -1,8 +1,9 @@
+import scheduler
 import unittest
 
 from scheduler import calculate_remaining, calculate_unscheduled, sort_tasks_by_priority
 from datetime import datetime
-from models import Task
+from models import Task, AvailabilityWindow
 
 
 class SchedulerTests(unittest.TestCase):
@@ -50,6 +51,8 @@ class SchedulerTests(unittest.TestCase):
             0,
             deadline=deadline,
             importance=5,
+            min_session_minutes=30,
+            max_session_minutes=60,
         )
 
         t2 = Task(
@@ -58,6 +61,8 @@ class SchedulerTests(unittest.TestCase):
             0,
             deadline=deadline,
             importance=3,
+            min_session_minutes=30,
+            max_session_minutes=60,
         )
 
         ordered_tasks = sort_tasks_by_priority([t2, t1])
@@ -74,6 +79,8 @@ class SchedulerTests(unittest.TestCase):
             0,
             deadline=deadline,
             importance=3,
+            min_session_minutes=30,
+            max_session_minutes=60,
         )
 
         t2 = Task(
@@ -82,6 +89,8 @@ class SchedulerTests(unittest.TestCase):
             0,
             deadline=deadline,
             importance=3,
+            min_session_minutes=30,
+            max_session_minutes=60,
         )
 
         ordered_tasks = sort_tasks_by_priority([t2, t1])
@@ -97,6 +106,8 @@ class SchedulerTests(unittest.TestCase):
             0,
             deadline=datetime(2026, 8, 25, 11, 0),
             importance=2,
+            min_session_minutes=30,
+            max_session_minutes=60,
         )
 
         t2 = Task(
@@ -105,12 +116,45 @@ class SchedulerTests(unittest.TestCase):
             0,
             deadline=datetime(2026, 8, 25, 15, 0),
             importance=5,
+            min_session_minutes=30,
+            max_session_minutes=60,
         )
 
         ordered_tasks = sort_tasks_by_priority([t2, t1])
         actual_ids = [task.task_id for task in ordered_tasks]
 
         self.assertEqual(actual_ids, ["T1", "T2"])
+
+    def test_schedules_one_task_that_fits_exactly(self):
+        t1 = Task(
+            "T1",
+            60,
+            0,
+            deadline=datetime(2026, 8, 25, 12, 0),
+            importance=3,
+            min_session_minutes=30,
+            max_session_minutes=60,
+        )
+
+        window = AvailabilityWindow(
+            start=datetime(2026, 8, 25, 10, 0),
+            end=datetime(2026, 8, 25, 11, 0),
+        )
+
+        result = scheduler.schedule_tasks(
+            tasks=[t1],
+            availability_windows=[window],
+        )
+
+        self.assertEqual(len(result.scheduled_blocks), 1)
+
+        block = result.scheduled_blocks[0]
+
+        self.assertEqual(block.task_id, "T1")
+        self.assertEqual(block.start, datetime(2026, 8, 25, 10, 0))
+        self.assertEqual(block.end, datetime(2026, 8, 25, 11, 0))
+        self.assertEqual(block.allocated_minutes, 60)
+        self.assertEqual(result.unscheduled_minutes, 0)
 
 if __name__ == "__main__":
     unittest.main()
