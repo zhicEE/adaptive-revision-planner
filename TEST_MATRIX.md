@@ -9,12 +9,14 @@ implemented or independently mastered.
 
 The current code implements validated `Task` and `AvailabilityWindow` inputs,
 stored session limits, initial scheduling-result models, two small calculation
-helpers, deterministic priority ordering, and the S01 exact-fit allocation
-slice with 25 passing `unittest` tests. S03, S04, and S07 automate priority
-ordering only. The completed-work boundary used by S13 is also covered at the
-model layer, but capacity-limited and multi-item scheduling are not implemented
-yet. The implementation was AI-guided and is not evidence of independent
-mastery.
+helpers, deterministic priority ordering, the S01 exact-fit allocation slice,
+and the numeric capacity behavior of S02 with 26 passing `unittest` tests. S02
+limits allocation by remaining work, window capacity, and maximum session
+length, then reports unscheduled minutes; its machine-readable reason code is
+still pending. S03, S04, and S07 automate priority ordering only. The
+completed-work boundary used by S13 is also covered at the model layer, but
+minimum-session handling and multi-item scheduling are not implemented yet.
+The implementation was AI-guided and is not evidence of independent mastery.
 
 ## Priority rule v0.1 - reviewed 2026-08-23
 
@@ -35,7 +37,7 @@ not change the priority order in this first candidate rule.
 | ID | Scenario | Key input | Expected result | Rule or invariant checked | Review status |
 |---|---|---|---|---|---|
 | S01 | One task fits exactly | T1 has 60 minutes remaining, deadline 12:00, availability 10:00-11:00, minimum 30, maximum 60 | Schedule T1 from 10:00-11:00; zero minutes unscheduled | Block stays inside availability and before deadline; allocation does not exceed remaining work | User confirmed; exact-fit allocation automated 2026-08-26 |
-| S02 | Capacity is insufficient after partial completion | T1 estimate 120, completed 30, deadline 12:00, availability 10:00-11:00 | Schedule 60 minutes; report 30 minutes unscheduled with `INSUFFICIENT_CAPACITY` | Remaining work is 90 minutes; the system reports rather than hides the shortfall | User confirmed |
+| S02 | Capacity is insufficient after partial completion | T1 estimate 120, completed 30, deadline 12:00, availability 10:00-11:00 | Schedule 60 minutes; report 30 minutes unscheduled with `INSUFFICIENT_CAPACITY` | Remaining work is 90 minutes; the system reports rather than hides the shortfall | Numeric capacity behavior automated 2026-08-27; reason code pending |
 | S03 | Equal deadline, different importance | T1 and T2 each need 60 minutes and have deadline 15:00; importance is 5 for T1 and 3 for T2; only 10:00-11:00 is available | Schedule T1; report all 60 minutes of T2 as unscheduled | Higher importance breaks an equal-deadline tie | User confirmed; priority ordering automated 2026-08-24 |
 | S04 | Full priority tie | T1 and T2 have equal deadline, importance, and remaining work; only one 60-minute window exists | Schedule T1 first because `T1` sorts before `T2` | Stable `task_id` tie-breaker makes repeated output deterministic | User confirmed; priority ordering automated 2026-08-24 |
 | S05 | Window is shorter than the minimum session | T1 needs 60 minutes, minimum session is 30, availability is 10:00-10:20 | Create no block; report all 60 minutes with `SESSION_TOO_SHORT` | The scheduler does not create an ineffective undersized block | User confirmed |
@@ -60,7 +62,10 @@ During implementation, convert each accepted row into one or more automated
 tests. Gate A still requires those tests to pass against the deterministic core
 and the user to explain the implemented data flow without reading the code.
 
-As of 2026-08-26, S01 has an automated exact-fit allocation test. S03, S04, and
-S07 have automated priority-ordering tests, but those tests do not yet allocate
-the single available window or produce unscheduled work. Capacity-limited
-allocation, reason codes, and multi-item planning remain unimplemented.
+As of 2026-08-27, S01 has an automated exact-fit allocation test and S02 has an
+automated capacity-limited allocation test for scheduled and unscheduled
+minutes. S02's `INSUFFICIENT_CAPACITY` reason code is still pending. S03, S04,
+and S07 have automated priority-ordering tests, but those tests do not yet
+allocate the single available window or produce unscheduled work for competing
+tasks. Minimum-session behavior, reason codes, and multi-item planning remain
+unimplemented.

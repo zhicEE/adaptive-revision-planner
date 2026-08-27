@@ -156,5 +156,35 @@ class SchedulerTests(unittest.TestCase):
         self.assertEqual(block.allocated_minutes, 60)
         self.assertEqual(result.unscheduled_minutes, 0)
 
+    def test_reports_unscheduled_minutes_when_capacity_is_insufficient(self):
+        t1 = Task(
+            "English",
+            120,
+            30,
+            deadline=datetime(2026, 8, 25, 12, 0),
+            importance=3,
+            min_session_minutes=30,
+            max_session_minutes=60,
+        )
+
+        window = AvailabilityWindow(
+            start=datetime(2026, 8, 25, 10, 0),
+            end=datetime(2026, 8, 25, 11, 0),
+        )
+
+        result = scheduler.schedule_tasks(
+            tasks=[t1],
+            availability_windows=[window]
+        )
+
+        self.assertEqual(len(result.scheduled_blocks), 1)
+
+        block = result.scheduled_blocks[0]
+
+        self.assertEqual(block.start, datetime(2026, 8, 25, 10, 0))
+        self.assertEqual(block.end, datetime(2026, 8, 25, 11, 0))
+        self.assertEqual(block.allocated_minutes, 60)
+        self.assertEqual(result.unscheduled_minutes, 30)
+
 if __name__ == "__main__":
     unittest.main()
