@@ -1,4 +1,4 @@
-from models import ScheduledBlock, ScheduleResult
+from models import ScheduledBlock, ScheduleResult, UnscheduledWork
 from datetime import timedelta
 
 
@@ -48,6 +48,17 @@ def schedule_tasks(tasks, availability_windows):
         task.remaining_minutes - allocated_minutes
     )
 
+    unscheduled_work = []
+
+    if unscheduled_minutes > 0:
+        unscheduled_work.append(
+            UnscheduledWork(
+                task_id=task.task_id,
+                remaining_minutes=unscheduled_minutes,
+                reason_code="INSUFFICIENT_CAPACITY",
+            )
+        )
+
     scheduled_block = ScheduledBlock(
         task_id=task.task_id,
         start=window.start,
@@ -58,4 +69,5 @@ def schedule_tasks(tasks, availability_windows):
     return ScheduleResult(
         scheduled_blocks=[scheduled_block],
         unscheduled_minutes=unscheduled_minutes,
+        unscheduled_work=unscheduled_work,
     )

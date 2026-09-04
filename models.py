@@ -48,6 +48,14 @@ class ScheduledBlock:
 
 
 @dataclass
+class UnscheduledWork:
+    task_id: str
+    remaining_minutes: int
+    reason_code: str
+
+
+@dataclass
 class ScheduleResult:
     scheduled_blocks: list[ScheduledBlock]
     unscheduled_minutes: int
+    unscheduled_work: list[UnscheduledWork]
