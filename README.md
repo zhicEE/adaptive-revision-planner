@@ -4,7 +4,7 @@
 
 ## Project Status
 
-**Gate A — deterministic core implementation.** The repository now contains validated `Task` and `AvailabilityWindow` inputs, stored session limits, initial result models, two calculation helpers, deterministic priority ordering by deadline, importance, and `task_id`, exact-fit allocation, and the first capacity-limited allocation slice. The current suite has 26 passing `unittest` tests. S01 is automated end to end for one task that exactly fills one window. S02 now limits a block by the task's remaining work, the available window, and the maximum session length, then reports remaining unscheduled minutes. S03, S04, and S07 currently automate priority ordering only. Machine-readable reason codes, minimum-session handling, multiple tasks and windows, the API, persistence, and a runnable application have not been implemented yet.
+**Gate A — deterministic core implementation.** The repository now contains validated `Task` and `AvailabilityWindow` inputs, stored session limits, initial result models, two calculation helpers, deterministic priority ordering by deadline, importance, and `task_id`, exact-fit allocation, and the first capacity-limited allocation slice. The current suite has 26 passing `unittest` tests. S01 is automated end to end for one task that exactly fills one window. S02 now limits a block by the task's remaining work, the available window, and the maximum session length, then reports remaining unscheduled minutes together with a structured `UnscheduledWork` result carrying the task ID, remaining minutes, and the `INSUFFICIENT_CAPACITY` reason code. S03, S04, and S07 currently automate priority ordering only. Other reason codes, minimum-session handling, multiple tasks and windows, the API, persistence, and a runnable application have not been implemented yet.
 
 ## Why This Project Exists
 
@@ -71,7 +71,7 @@ The scheduling engine is being implemented first as pure Python functions, indep
 - Session-length constraints
 - Insufficient total capacity
 
-The reviewed algorithm matrix contains 15 scenarios covering equal deadlines, sufficient and insufficient capacity, unavailable days, importance-versus-urgency trade-offs, partial completion, disrupted plans, invalid effort values, and conflicting exams. S01 is automated for exact-fit allocation. S02 now automates capacity-limited minutes and the unscheduled total, but its `INSUFFICIENT_CAPACITY` reason code is still pending. S03, S04, and S07 automate priority ordering but do not yet allocate competing tasks. The remaining scenario behavior still requires implementation and verification.
+The reviewed algorithm matrix contains 15 scenarios covering equal deadlines, sufficient and insufficient capacity, unavailable days, importance-versus-urgency trade-offs, partial completion, disrupted plans, invalid effort values, and conflicting exams. S01 is automated for exact-fit allocation. S02 now automates capacity-limited minutes, the unscheduled total, and the structured `INSUFFICIENT_CAPACITY` reason code. S03, S04, and S07 automate priority ordering but do not yet allocate competing tasks. The remaining scenario behavior still requires implementation and verification.
 
 ## AI Responsibility Boundary
 
