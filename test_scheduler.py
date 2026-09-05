@@ -198,5 +198,80 @@ class SchedulerTests(unittest.TestCase):
             "INSUFFICIENT_CAPACITY"
         )
 
+    def test_does_not_schedule_window_shorter_than_minimum_session(self):
+        t1 = Task(
+            "T1",
+            60,
+            0,
+            deadline=datetime(2026, 8, 25, 12, 0),
+            importance=3,
+            min_session_minutes=30,
+            max_session_minutes=60,
+        )
+
+        window = AvailabilityWindow(
+            start=datetime(2026, 8, 25, 10, 0),
+            end=datetime(2026, 8, 25, 10, 20),
+        )
+
+        result = scheduler.schedule_tasks(
+            tasks=[t1],
+            availability_windows=[window]
+        )
+
+        self.assertEqual(result.scheduled_blocks, [])
+        self.assertEqual(result.unscheduled_minutes, 60)
+        self.assertEqual(len(result.unscheduled_work), 1)
+
+        unscheduled = result.unscheduled_work[0]
+
+        self.assertEqual(unscheduled.task_id, "T1")
+        self.assertEqual(unscheduled.remaining_minutes, 60)
+        self.assertEqual(
+            unscheduled.reason_code,
+            "SESSION_TOO_SHORT"
+        )
+
+    def test_schedules_window_equal_to_minimum_session(self):
+        t1 = Task(
+            "T1",
+            60,
+            0,
+            deadline=datetime(2026, 8, 25, 12, 0),
+            importance=3,
+            min_session_minutes=30,
+            max_session_minutes=60,
+        )
+
+        window = AvailabilityWindow(
+            start=datetime(2026, 8, 25, 10, 0),
+            end=datetime(2026, 8, 25, 10, 30),
+        )
+
+        result = scheduler.schedule_tasks(
+            tasks=[t1],
+            availability_windows=[window]
+        )
+
+        self.assertEqual(len(result.scheduled_blocks), 1)
+
+        block = result.scheduled_blocks[0]
+
+        self.assertEqual(block.start, datetime(2026, 8, 25, 10, 0))
+        self.assertEqual(block.end, datetime(2026, 8, 25, 10, 30))
+        self.assertEqual(block.allocated_minutes, 30)
+        self.assertEqual(result.unscheduled_minutes, 30)
+
+        self.assertEqual(len(result.unscheduled_work), 1)
+
+        unscheduled = result.unscheduled_work[0]
+
+        self.assertEqual(unscheduled.task_id, "T1")
+        self.assertEqual(unscheduled.remaining_minutes, 30)
+        self.assertEqual(
+            unscheduled.reason_code,
+            "INSUFFICIENT_CAPACITY"
+        )
+
 if __name__ == "__main__":
     unittest.main()
