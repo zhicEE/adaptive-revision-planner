@@ -34,6 +34,23 @@ def schedule_tasks(tasks, availability_windows):
         (window.end - window.start).total_seconds() / 60
     )
 
+    unscheduled_work = []
+
+    if window_minutes < task.min_session_minutes:
+        unscheduled_work.append(
+            UnscheduledWork(
+                task_id=task.task_id,
+                remaining_minutes=task.remaining_minutes,
+                reason_code="SESSION_TOO_SHORT",
+            )
+        )
+
+        return ScheduleResult(
+            scheduled_blocks=[],
+            unscheduled_minutes=task.remaining_minutes,
+            unscheduled_work=unscheduled_work,
+        )
+
     allocated_minutes = min(
         window_minutes,
         task.remaining_minutes,
@@ -47,8 +64,6 @@ def schedule_tasks(tasks, availability_windows):
     unscheduled_minutes = (
         task.remaining_minutes - allocated_minutes
     )
-
-    unscheduled_work = []
 
     if unscheduled_minutes > 0:
         unscheduled_work.append(
