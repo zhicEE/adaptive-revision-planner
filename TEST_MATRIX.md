@@ -10,14 +10,19 @@ implemented or independently mastered.
 The current code implements validated `Task` and `AvailabilityWindow` inputs,
 stored session limits, initial scheduling-result models, two small calculation
 helpers, deterministic priority ordering, the S01 exact-fit allocation slice,
-the capacity behavior and structured result of S02, and the minimum-session
-behavior of S05 with 28 passing
+the capacity behavior and structured result of S02, the minimum-session
+behavior of S05, and the S06 deadline-start check with 30 passing
 `unittest` tests. S02 limits allocation by remaining work, window capacity, and
 maximum session length, then reports unscheduled minutes together with an
 `UnscheduledWork` result using the machine-readable `INSUFFICIENT_CAPACITY`
 reason code. S05 rejects a window below the minimum session with
 `SESSION_TOO_SHORT`; an adjacent boundary test verifies that a window exactly
-equal to the minimum is accepted. S03, S04, and S07 automate priority ordering
+equal to the minimum is accepted. S06 rejects a window starting at or after
+the deadline with `NO_WINDOW_BEFORE_DEADLINE`, no blocks, and all remaining
+work unscheduled. Both the after-deadline and exact-deadline cases are automated.
+The deadline check takes precedence over the minimum-session check. Clipping a
+window that starts before but ends after the deadline remains unimplemented.
+S03, S04, and S07 automate priority ordering
 only. The completed-work boundary used by S13 is also covered at the model
 layer, but multi-item scheduling is not implemented yet.
 The implementation was AI-guided and is not evidence of independent mastery.
@@ -45,7 +50,7 @@ not change the priority order in this first candidate rule.
 | S03 | Equal deadline, different importance | T1 and T2 each need 60 minutes and have deadline 15:00; importance is 5 for T1 and 3 for T2; only 10:00-11:00 is available | Schedule T1; report all 60 minutes of T2 as unscheduled | Higher importance breaks an equal-deadline tie | User confirmed; priority ordering automated 2026-08-24 |
 | S04 | Full priority tie | T1 and T2 have equal deadline, importance, and remaining work; only one 60-minute window exists | Schedule T1 first because `T1` sorts before `T2` | Stable `task_id` tie-breaker makes repeated output deterministic | User confirmed; priority ordering automated 2026-08-24 |
 | S05 | Window is shorter than the minimum session | T1 needs 60 minutes, minimum session is 30, availability is 10:00-10:20 | Create no block; report all 60 minutes with `SESSION_TOO_SHORT` | The scheduler does not create an ineffective undersized block | User confirmed; rejection and exact-minimum boundary automated 2026-09-05 |
-| S06 | No window exists before the deadline | T1 needs 60 minutes, deadline 11:00, only availability is 11:30-12:30 | Create no block; report all 60 minutes with `NO_WINDOW_BEFORE_DEADLINE` | Work is never silently placed after its deadline | User confirmed |
+| S06 | No window exists before the deadline | T1 needs 60 minutes, deadline 11:00, only availability is 11:30-12:30 | Create no block; report all 60 minutes with `NO_WINDOW_BEFORE_DEADLINE` | A window starting at or after the deadline is rejected; crossing-window clipping remains unimplemented | User confirmed; after-deadline and exact-deadline rejection automated 2026-09-06 |
 | S07 | Earlier deadline versus higher importance | T1 needs 60 minutes, deadline 11:00, importance 2; T2 needs 60 minutes, deadline 15:00, importance 5; only 10:00-11:00 is available | Schedule T1; report T2 as unscheduled | Earlier deadline takes priority over higher importance | User confirmed; priority ordering automated 2026-08-24 |
 | S08 | Task is already complete | T1 estimate and completed minutes are both 60 | Create no block and report zero remaining and zero unscheduled minutes for T1 | Completed work is excluded rather than scheduled again | Confirmed in guided code |
 | S09 | One task is split across two windows | T1 needs 90 minutes, minimum session 30, maximum 60; availability is 10:00-10:45 and 14:00-14:45 before the deadline | Create two 45-minute blocks; zero minutes unscheduled | Splitting is allowed and both blocks respect session limits | User confirmed |
@@ -66,11 +71,20 @@ During implementation, convert each accepted row into one or more automated
 tests. Gate A still requires those tests to pass against the deterministic core
 and the user to explain the implemented data flow without reading the code.
 
-As of 2026-09-05, S01 has an automated exact-fit allocation test and S02 has an
+As of 2026-09-06, S01 has an automated exact-fit allocation test and S02 has an
 automated capacity-limited allocation test for scheduled and unscheduled
 minutes together with the structured `INSUFFICIENT_CAPACITY` result. S03, S04,
 and S07 have automated priority-ordering tests, but those tests do not yet
 allocate the single available window or produce unscheduled work for competing
 tasks. S05 has automated tests for a window below and exactly at the minimum
-session length, including the `SESSION_TOO_SHORT` result. Other reason codes
-and multi-item planning remain unimplemented.
+session length, including the `SESSION_TOO_SHORT` result. S06 covers a window
+starting after or exactly at the deadline with `NO_WINDOW_BEFORE_DEADLINE`.
+Deadline-crossing window clipping and multi-item planning remain unimplemented.
+
+The S06 implementation was completed with targeted prompts on `>=` and branch
+ordering. The user correctly predicted the original late allocation and explained
+why rejecting the window leaves all remaining work unscheduled. An in-memory
+mutation from `>=` to `>` made the new equality-boundary test fail as expected.
+A separate temporary check verified deadline-reason precedence for a window
+that was both late and too short; that check is not part of the 30-test suite.
+This evidence does not establish independent scheduling-engine design ability.

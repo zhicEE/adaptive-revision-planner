@@ -36,6 +36,21 @@ def schedule_tasks(tasks, availability_windows):
 
     unscheduled_work = []
 
+    if window.start >= task.deadline:
+        unscheduled_work.append(
+            UnscheduledWork(
+                task_id=task.task_id,
+                remaining_minutes=task.remaining_minutes,
+                reason_code="NO_WINDOW_BEFORE_DEADLINE",
+            )
+        )
+
+        return ScheduleResult(
+            scheduled_blocks=[],
+            unscheduled_minutes=task.remaining_minutes,
+            unscheduled_work=unscheduled_work,
+        )
+
     if window_minutes < task.min_session_minutes:
         unscheduled_work.append(
             UnscheduledWork(

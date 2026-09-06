@@ -273,5 +273,73 @@ class SchedulerTests(unittest.TestCase):
             "INSUFFICIENT_CAPACITY"
         )
 
+    def test_does_not_schedule_window_after_deadline(self):
+        t1 = Task(
+            "T1",
+            60,
+            0,
+            deadline=datetime(2026, 8, 25, 11, 0),
+            importance=3,
+            min_session_minutes=30,
+            max_session_minutes=60,
+        )
+
+        window = AvailabilityWindow(
+            start=datetime(2026, 8, 25, 11, 30),
+            end=datetime(2026, 8, 25, 12, 30),
+        )
+
+        result = scheduler.schedule_tasks(
+            tasks=[t1],
+            availability_windows=[window]
+        )
+
+        self.assertEqual(result.scheduled_blocks, [])
+        self.assertEqual(result.unscheduled_minutes, 60)
+        self.assertEqual(len(result.unscheduled_work), 1)
+
+        unscheduled = result.unscheduled_work[0]
+
+        self.assertEqual(unscheduled.task_id, "T1")
+        self.assertEqual(unscheduled.remaining_minutes, 60)
+        self.assertEqual(
+            unscheduled.reason_code,
+            "NO_WINDOW_BEFORE_DEADLINE"
+        )
+
+    def test_does_not_schedule_window_starting_at_deadline(self):
+        t1 = Task(
+            "T1",
+            60,
+            0,
+            deadline=datetime(2026, 8, 25, 11, 0),
+            importance=3,
+            min_session_minutes=30,
+            max_session_minutes=60,
+        )
+
+        window = AvailabilityWindow(
+            start=datetime(2026, 8, 25, 11, 0),
+            end=datetime(2026, 8, 25, 12, 0),
+        )
+
+        result = scheduler.schedule_tasks(
+            tasks=[t1],
+            availability_windows=[window]
+        )
+
+        self.assertEqual(result.scheduled_blocks, [])
+        self.assertEqual(result.unscheduled_minutes, 60)
+        self.assertEqual(len(result.unscheduled_work), 1)
+
+        unscheduled = result.unscheduled_work[0]
+
+        self.assertEqual(unscheduled.task_id, "T1")
+        self.assertEqual(unscheduled.remaining_minutes, 60)
+        self.assertEqual(
+            unscheduled.reason_code,
+            "NO_WINDOW_BEFORE_DEADLINE"
+        )
+
 if __name__ == "__main__":
     unittest.main()
