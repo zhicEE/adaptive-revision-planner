@@ -341,5 +341,45 @@ class SchedulerTests(unittest.TestCase):
             "NO_WINDOW_BEFORE_DEADLINE"
         )
 
+    def test_clips_window_at_task_deadline(self):
+        t1 = Task(
+            "T1",
+            90,
+            0,
+            deadline=datetime(2026, 8, 25, 10, 0),
+            importance=3,
+            min_session_minutes=30,
+            max_session_minutes=90,
+        )
+
+        window = AvailabilityWindow(
+            start=datetime(2026, 8, 25, 9, 0),
+            end=datetime(2026, 8, 25, 11, 0),
+        )
+
+        result = scheduler.schedule_tasks(
+            tasks=[t1],
+            availability_windows=[window]
+        )
+
+        self.assertEqual(len(result.scheduled_blocks), 1)
+
+        block = result.scheduled_blocks[0]
+
+        self.assertEqual(block.start, datetime(2026, 8, 25, 9, 0))
+        self.assertEqual(block.end, datetime(2026, 8, 25, 10, 0))
+        self.assertEqual(block.allocated_minutes, 60)
+        self.assertEqual(result.unscheduled_minutes, 30)
+        self.assertEqual(len(result.unscheduled_work), 1)
+
+        unscheduled = result.unscheduled_work[0]
+
+        self.assertEqual(unscheduled.task_id, "T1")
+        self.assertEqual(unscheduled.remaining_minutes, 30)
+        self.assertEqual(
+            unscheduled.reason_code,
+            "INSUFFICIENT_CAPACITY"
+        )
+
 if __name__ == "__main__":
     unittest.main()

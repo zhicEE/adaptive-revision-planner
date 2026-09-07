@@ -30,8 +30,10 @@ def schedule_tasks(tasks, availability_windows):
     task = tasks[0]
     window = availability_windows[0]
 
+    effective_end = min(window.end, task.deadline)
+
     window_minutes = int(
-        (window.end - window.start).total_seconds() / 60
+        (effective_end - window.start).total_seconds() / 60
     )
 
     unscheduled_work = []
