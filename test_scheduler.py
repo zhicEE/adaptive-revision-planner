@@ -381,5 +381,130 @@ class SchedulerTests(unittest.TestCase):
             "INSUFFICIENT_CAPACITY"
         )
 
+    def test_splits_one_task_across_two_windows(self):
+        t1 = Task(
+            "T1",
+            90,
+            0,
+            deadline=datetime(2026, 8, 25, 18, 0),
+            importance=3,
+            min_session_minutes=30,
+            max_session_minutes=60,
+        )
+
+        window1 = AvailabilityWindow(
+            start=datetime(2026, 8, 25, 10, 0),
+            end=datetime(2026, 8, 25, 10, 45)
+        )
+
+        window2 = AvailabilityWindow(
+            start=datetime(2026, 8, 25, 14, 0),
+            end=datetime(2026, 8, 25, 14, 45)
+        )
+
+        result = scheduler.schedule_tasks(
+            tasks=[t1],
+            availability_windows=[window1, window2]
+        )
+
+        self.assertEqual(len(result.scheduled_blocks), 2)
+
+        block1 = result.scheduled_blocks[0]
+        block2 = result.scheduled_blocks[1]
+
+        self.assertEqual(block1.start, datetime(2026, 8, 25, 10, 0))
+        self.assertEqual(block1.end, datetime(2026, 8, 25, 10, 45))
+        self.assertEqual(block2.start, datetime(2026, 8, 25, 14, 0))
+        self.assertEqual(block2.end, datetime(2026, 8, 25, 14, 45))
+        self.assertEqual(block1.allocated_minutes, 45)
+        self.assertEqual(block2.allocated_minutes, 45)
+        self.assertEqual(result.unscheduled_minutes, 0)
+        self.assertEqual(result.unscheduled_work, [])
+
+    def test_does_not_allocate_more_than_remaining_work_across_windows(self):
+        t1 = Task(
+            "T1",
+            90,
+            0,
+            deadline=datetime(2026, 8, 25, 18, 0),
+            importance=3,
+            min_session_minutes=30,
+            max_session_minutes=60,
+        )
+
+        window1 = AvailabilityWindow(
+            start=datetime(2026, 8, 25, 10, 0),
+            end=datetime(2026, 8, 25, 11, 0)
+        )
+
+        window2 = AvailabilityWindow(
+            start=datetime(2026, 8, 25, 14, 0),
+            end=datetime(2026, 8, 25, 15, 0)
+        )
+
+        result = scheduler.schedule_tasks(
+            tasks=[t1],
+            availability_windows=[window1, window2]
+        )
+
+        self.assertEqual(len(result.scheduled_blocks), 2)
+
+        block1 = result.scheduled_blocks[0]
+        block2 = result.scheduled_blocks[1]
+
+        self.assertEqual(block1.start, datetime(2026, 8, 25, 10, 0))
+        self.assertEqual(block1.end, datetime(2026, 8, 25, 11, 0))
+        self.assertEqual(block2.start, datetime(2026, 8, 25, 14, 0))
+        self.assertEqual(block2.end, datetime(2026, 8, 25, 14, 30))
+        self.assertEqual(block1.allocated_minutes + block2.allocated_minutes, 90)
+        self.assertEqual(result.unscheduled_minutes, 0)
+        self.assertEqual(result.unscheduled_work, [])
+
+    def test_keeps_scheduled_blocks_when_a_later_window_starts_at_deadline(self):
+        t1 = Task(
+            "T1",
+            90,
+            0,
+            deadline=datetime(2026, 8, 25, 12, 0),
+            importance=3,
+            min_session_minutes=30,
+            max_session_minutes=60,
+        )
+
+        window1 = AvailabilityWindow(
+            start=datetime(2026, 8, 25, 10, 0),
+            end=datetime(2026, 8, 25, 11, 0),
+        )
+
+        window2 = AvailabilityWindow(
+            start=datetime(2026, 8, 25, 12, 0),
+            end=datetime(2026, 8, 25, 13, 0),
+        )
+
+        result = scheduler.schedule_tasks(
+            tasks=[t1],
+            availability_windows=[window1, window2],
+        )
+
+        self.assertEqual(len(result.scheduled_blocks), 1)
+
+        block = result.scheduled_blocks[0]
+
+        self.assertEqual(block.task_id, "T1")
+        self.assertEqual(block.start, datetime(2026, 8, 25, 10, 0))
+        self.assertEqual(block.end, datetime(2026, 8, 25, 11, 0))
+        self.assertEqual(block.allocated_minutes, 60)
+        self.assertEqual(result.unscheduled_minutes, 30)
+        self.assertEqual(len(result.unscheduled_work), 1)
+
+        unscheduled = result.unscheduled_work[0]
+
+        self.assertEqual(unscheduled.task_id, "T1")
+        self.assertEqual(unscheduled.remaining_minutes, 30)
+        self.assertEqual(
+            unscheduled.reason_code,
+            "NO_WINDOW_BEFORE_DEADLINE",
+        )
+
 if __name__ == "__main__":
     unittest.main()
