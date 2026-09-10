@@ -11,8 +11,8 @@ The current code implements validated `Task` and `AvailabilityWindow` inputs,
 stored session limits, initial scheduling-result models, two small calculation
 helpers, deterministic priority ordering, the S01 exact-fit allocation slice,
 the capacity behavior and structured result of S02, the minimum-session
-behavior of S05, the S06 deadline-boundary behavior, and the S09 valid
-multi-window splitting slice for one task with 34 passing
+behavior of S05, mixed undersized/valid-window selection, the S06
+deadline-boundary behavior, and the S09 valid multi-window splitting slice for one task with 35 passing
 `unittest` tests. S02 limits allocation by remaining work, window capacity, and
 maximum session length, then reports unscheduled minutes together with an
 `UnscheduledWork` result using the machine-readable `INSUFFICIENT_CAPACITY`
@@ -26,8 +26,9 @@ that starts before but ends after the deadline is clipped by using the earlier
 of its end and the task deadline as the effective end; the remaining work is
 reported with `INSUFFICIENT_CAPACITY`. For S09, one task can be split across
 multiple valid windows without exceeding its remaining work; already-created
-blocks are retained if a later window starts at the deadline. Selection across
-mixed valid and undersized windows is not implemented yet.
+blocks are retained if a later window starts at the deadline. An undersized
+window is skipped when a later valid window can schedule the task, while a
+request containing only an undersized window still reports `SESSION_TOO_SHORT`.
 S03, S04, and S07 automate priority ordering
 only. The completed-work boundary used by S13 is also covered at the model
 layer, but multi-item scheduling is not implemented yet.
@@ -55,7 +56,7 @@ not change the priority order in this first candidate rule.
 | S02 | Capacity is insufficient after partial completion | T1 estimate 120, completed 30, deadline 12:00, availability 10:00-11:00 | Schedule 60 minutes; report 30 minutes unscheduled with `INSUFFICIENT_CAPACITY` | Remaining work is 90 minutes; the system reports rather than hides the shortfall | Numeric capacity behavior automated 2026-08-27; reason code automated 2026-09-04 |
 | S03 | Equal deadline, different importance | T1 and T2 each need 60 minutes and have deadline 15:00; importance is 5 for T1 and 3 for T2; only 10:00-11:00 is available | Schedule T1; report all 60 minutes of T2 as unscheduled | Higher importance breaks an equal-deadline tie | User confirmed; priority ordering automated 2026-08-24 |
 | S04 | Full priority tie | T1 and T2 have equal deadline, importance, and remaining work; only one 60-minute window exists | Schedule T1 first because `T1` sorts before `T2` | Stable `task_id` tie-breaker makes repeated output deterministic | User confirmed; priority ordering automated 2026-08-24 |
-| S05 | Window is shorter than the minimum session | T1 needs 60 minutes, minimum session is 30, availability is 10:00-10:20 | Create no block; report all 60 minutes with `SESSION_TOO_SHORT` | The scheduler does not create an ineffective undersized block | User confirmed; rejection and exact-minimum boundary automated 2026-09-05 |
+| S05 | Window is shorter than the minimum session | T1 needs 60 minutes, minimum session is 30, availability is 10:00-10:20 | Create no block; report all 60 minutes with `SESSION_TOO_SHORT` | The scheduler does not create an ineffective undersized block | User confirmed; rejection and exact-minimum boundary automated 2026-09-05; mixed undersized/valid-window continuation automated 2026-09-10 |
 | S06 | No window exists before the deadline | T1 needs 60 minutes, deadline 11:00, only availability is 11:30-12:30 | Create no block; report all 60 minutes with `NO_WINDOW_BEFORE_DEADLINE` | A window starting at or after the deadline is rejected; an adjacent test clips a crossing window at the deadline | User confirmed; after-deadline and exact-deadline rejection automated 2026-09-06; crossing-window clipping automated 2026-09-07 |
 | S07 | Earlier deadline versus higher importance | T1 needs 60 minutes, deadline 11:00, importance 2; T2 needs 60 minutes, deadline 15:00, importance 5; only 10:00-11:00 is available | Schedule T1; report T2 as unscheduled | Earlier deadline takes priority over higher importance | User confirmed; priority ordering automated 2026-08-24 |
 | S08 | Task is already complete | T1 estimate and completed minutes are both 60 | Create no block and report zero remaining and zero unscheduled minutes for T1 | Completed work is excluded rather than scheduled again | Confirmed in guided code |
@@ -77,21 +78,23 @@ During implementation, convert each accepted row into one or more automated
 tests. Gate A still requires those tests to pass against the deterministic core
 and the user to explain the implemented data flow without reading the code.
 
-As of 2026-09-09, S01 has an automated exact-fit allocation test and S02 has an
+As of 2026-09-10, S01 has an automated exact-fit allocation test and S02 has an
 automated capacity-limited allocation test for scheduled and unscheduled
 minutes together with the structured `INSUFFICIENT_CAPACITY` result. S03, S04,
 and S07 have automated priority-ordering tests, but those tests do not yet
 allocate the single available window or produce unscheduled work for competing
 tasks. S05 has automated tests for a window below and exactly at the minimum
-session length, including the `SESSION_TOO_SHORT` result. S06 covers a window
+session length, including the `SESSION_TOO_SHORT` result. A mixed-window test
+also verifies that an undersized candidate is skipped when a later valid window
+can complete the task. S06 covers a window
 starting after or exactly at the deadline with `NO_WINDOW_BEFORE_DEADLINE`.
 An adjacent boundary test covers a window that starts before and ends after the
 deadline: the effective end is the earlier of the window end and deadline, so
 the block stops at the deadline and the remaining minutes are reported with
 `INSUFFICIENT_CAPACITY`. S09 now splits one task across multiple valid windows,
 caps the last block at the task's remaining work, and retains earlier blocks
-when a later window starts at the deadline. Mixed valid and undersized-window
-selection and multi-item planning remain unimplemented.
+when a later window starts at the deadline. Multi-item planning remains
+unimplemented.
 
 The S06 implementation was completed with targeted prompts on `>=` and branch
 ordering. The user correctly predicted the original late allocation and explained

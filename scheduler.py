@@ -31,6 +31,7 @@ def schedule_tasks(tasks, availability_windows):
     remaining_minutes = task.remaining_minutes
     scheduled_blocks = []
     unscheduled_work = []
+    saw_undersized_window = False
 
     for window in availability_windows:
 
@@ -59,19 +60,8 @@ def schedule_tasks(tasks, availability_windows):
             )
 
         if window_minutes < task.min_session_minutes:
-            unscheduled_work.append(
-                UnscheduledWork(
-                    task_id=task.task_id,
-                    remaining_minutes=remaining_minutes,
-                    reason_code="SESSION_TOO_SHORT",
-                )
-            )
-
-            return ScheduleResult(
-                scheduled_blocks=[],
-                unscheduled_minutes=remaining_minutes,
-                unscheduled_work=unscheduled_work,
-            )
+            saw_undersized_window = True
+            continue
 
         allocated_minutes = min(
             window_minutes,
@@ -96,11 +86,16 @@ def schedule_tasks(tasks, availability_windows):
     unscheduled_minutes = remaining_minutes
 
     if unscheduled_minutes > 0:
+        reason_code = "INSUFFICIENT_CAPACITY"
+
+        if not scheduled_blocks and saw_undersized_window:
+            reason_code = "SESSION_TOO_SHORT"
+
         unscheduled_work.append(
             UnscheduledWork(
                 task_id=task.task_id,
                 remaining_minutes=remaining_minutes,
-                reason_code="INSUFFICIENT_CAPACITY",
+                reason_code=reason_code,
             )
         )
 

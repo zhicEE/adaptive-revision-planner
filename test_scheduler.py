@@ -273,6 +273,43 @@ class SchedulerTests(unittest.TestCase):
             "INSUFFICIENT_CAPACITY"
         )
 
+    def test_skips_short_window_when_later_window_is_valid(self):
+        t1 = Task(
+            "T1",
+            60,
+            0,
+            deadline=datetime(2026, 8, 25, 16, 0),
+            importance=3,
+            min_session_minutes=30,
+            max_session_minutes=60,
+        )
+
+        short_window = AvailabilityWindow(
+            start=datetime(2026, 8, 25, 10, 0),
+            end=datetime(2026, 8, 25, 10, 20),
+        )
+
+        valid_window = AvailabilityWindow(
+            start=datetime(2026, 8, 25, 14, 0),
+            end=datetime(2026, 8, 25, 15, 0),
+        )
+
+        result = scheduler.schedule_tasks(
+            tasks=[t1],
+            availability_windows=[short_window, valid_window],
+        )
+
+        self.assertEqual(len(result.scheduled_blocks), 1)
+
+        block = result.scheduled_blocks[0]
+
+        self.assertEqual(block.task_id, "T1")
+        self.assertEqual(block.start, datetime(2026, 8, 25, 14, 0))
+        self.assertEqual(block.end, datetime(2026, 8, 25, 15, 0))
+        self.assertEqual(block.allocated_minutes, 60)
+        self.assertEqual(result.unscheduled_minutes, 0)
+        self.assertEqual(result.unscheduled_work, [])
+
     def test_does_not_schedule_window_after_deadline(self):
         t1 = Task(
             "T1",
