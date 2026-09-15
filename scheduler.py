@@ -40,10 +40,6 @@ def schedule_tasks(tasks, availability_windows):
 
         effective_end = min(window.end, task.deadline)
 
-        window_minutes = int(
-            (effective_end - window.start).total_seconds() / 60
-        )
-
         if window.start >= task.deadline:
             unscheduled_work.append(
                 UnscheduledWork(
@@ -59,29 +55,37 @@ def schedule_tasks(tasks, availability_windows):
                 unscheduled_work=unscheduled_work,
             )
 
-        if window_minutes < task.min_session_minutes:
-            saw_undersized_window = True
-            continue
+        current_start = window.start
 
-        allocated_minutes = min(
-            window_minutes,
-            remaining_minutes,
-            task.max_session_minutes,
-        )
+        while(remaining_minutes > 0 and current_start < effective_end):
+            window_minutes = int(
+                (effective_end - current_start).total_seconds() / 60
+            )
 
-        block_end = window.start + timedelta(
-            minutes=allocated_minutes
-        )
+            if window_minutes < task.min_session_minutes:
+                saw_undersized_window = True
+                break
 
-        scheduled_block = ScheduledBlock(
-            task_id=task.task_id,
-            start=window.start,
-            end=block_end,
-            allocated_minutes=allocated_minutes,
-        )
+            allocated_minutes = min(
+                window_minutes,
+                remaining_minutes,
+                task.max_session_minutes,
+            )
 
-        scheduled_blocks.append(scheduled_block)
-        remaining_minutes = remaining_minutes - allocated_minutes
+            block_end = current_start + timedelta(
+                minutes=allocated_minutes
+            )
+
+            scheduled_block = ScheduledBlock(
+                task_id=task.task_id,
+                start=current_start,
+                end=block_end,
+                allocated_minutes=allocated_minutes,
+            )
+
+            scheduled_blocks.append(scheduled_block)
+            remaining_minutes = remaining_minutes - allocated_minutes
+            current_start = block_end
 
     unscheduled_minutes = remaining_minutes
 
